@@ -2,7 +2,6 @@ package service;
 
 /**
  * Definition of a listener for service.
- * @author temdi
  *
  */
 public interface ServiceListener {

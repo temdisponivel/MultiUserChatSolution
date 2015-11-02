@@ -1,30 +1,73 @@
 package service;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.HeadlessException;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map.Entry;
+
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JTextPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 
-public class ServerManager implements Runnable {
+import service.Message.FileMessage;
 
+public class ServerManager extends JFrame implements Runnable {
+
+	private static final long serialVersionUID = 1L;
 	public HashMap<User, ServerService> _services = new HashMap<User, ServerService>();
 	public ServerSocket _socket = null;
+	protected JTextPane _textMessages = new JTextPane();
+	protected SimpleAttributeSet _attributeColor = new SimpleAttributeSet();
 	
 	public ServerManager() {
-		try {
-			_socket = new ServerSocket(5597);
-			JOptionPane.showMessageDialog(null, InetAddress.getLocalHost() + ":" + String.valueOf(5597));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		StyleConstants.setFontSize(_attributeColor, 16);
+		StyleConstants.setForeground(_attributeColor, Color.black);
 	}
 	
 	public void Init() {
+		try {
+			_socket = new ServerSocket(5597);
+		} catch (BindException e) {
+			JOptionPane.showMessageDialog(null, e);
+			return;
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, e);
+			return;
+		}
 		new Thread(this).start();
+		_textMessages.setEditable(false);
+		this.setSize(800, 600);
+		this.getContentPane().setLayout(new BorderLayout());
+		this.add(_textMessages, BorderLayout.CENTER);
+		this.setVisible(true);
+		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		this.setTitle("SERVER CHAT");
+		
+		this.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				Finish();
+				e.getWindow().dispose();
+			}
+		});
+		try {
+			JOptionPane.showMessageDialog(null, InetAddress.getLocalHost() + ":" + String.valueOf(5597));
+		} catch (HeadlessException | UnknownHostException e1) {
+			e1.printStackTrace();
+		}
 	}
 	
 	synchronized void CloseServer(ServerService serviceClosed) {
@@ -77,7 +120,34 @@ public class ServerManager implements Runnable {
 	 * @param message Message to send.
 	 */
 	synchronized public void HandleMessage(Message message) {
-		System.out.println(message);
+		if (message.GetSender() != null) {
+			StyleConstants.setForeground(_attributeColor, message.GetSender().color);
+		}
+		else {
+			StyleConstants.setForeground(_attributeColor, Color.BLACK);
+		}
+		switch (message.GetMessageType()) {
+		case File:
+			try {
+				_textMessages.getDocument().insertString(
+						_textMessages.getDocument().getLength(), message.GetSender() + " sent a file named: "
+								+ ((FileMessage) message.GetMessage()).name + " to "
+								+ (message.IsPrivate() ? message.GetReceiver() : " all.")
+								+ "\n", _attributeColor);
+			} catch (BadLocationException e1) {
+				e1.printStackTrace();
+			}
+			break;
+		default:
+			try {
+				_textMessages.getDocument().insertString(
+						_textMessages.getDocument().getLength(), message.toString() + "\n", _attributeColor);
+			} catch (BadLocationException e1) {
+				e1.printStackTrace();
+			}
+			break;
+		}
+
 		if (message.IsPrivate()) {
 			try {
 				_services.get(message.GetReceiver()).Send(message);
@@ -118,4 +188,9 @@ public class ServerManager implements Runnable {
 		}		
 	}
 	
+	private void Finish() {
+		for (Entry<User, ServerService> service : _services.entrySet()) {
+			service.getValue().Finish();
+		}		
+	}	
 }

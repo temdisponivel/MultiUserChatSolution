@@ -1,11 +1,11 @@
 package service;
 
+import java.awt.Color;
 import java.io.Serializable;
 import java.util.Random;
 
 /**
  * Class that represents a user in chat.
- * @author temdi
  *
  */
 public class User implements Serializable {
@@ -14,10 +14,13 @@ public class User implements Serializable {
 	 * Name of the user.
 	 */
 	public String name;
+	public Color color;
 	private int _hash = 0;
 	
 	public User(String name) {
 		this.name = name;
+		Random r = new Random();
+		this.color = new Color(r.nextInt(200), r.nextInt(200), r.nextInt(200));
 		_hash = ~~new Random().nextInt() << 3;
 	}
 	

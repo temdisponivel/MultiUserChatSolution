@@ -198,7 +198,7 @@ public class Message implements Serializable {
 			return _sender.toString() + " just left.";
 		}
 		else if (this.IsPrivate()){
-			return _sender.toString() + " says in private to you: " + _message;
+			return _sender.toString() + " says in private to " + _receiver.toString() + ": " + _message;
 		} else {
 			return _sender.toString() + " says to all: " + _message;
 		}
