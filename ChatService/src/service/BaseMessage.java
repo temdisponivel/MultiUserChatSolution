@@ -12,7 +12,7 @@ public abstract class BaseMessage<T extends Serializable> implements Serializabl
 	private static final long serialVersionUID = 1L;
 	protected byte[] _encodedData = null;
 	
-	protected BaseMessage(T data) {
+	protected void SetData(T data) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		ObjectOutputStream objOut;
 		try {
@@ -28,7 +28,7 @@ public abstract class BaseMessage<T extends Serializable> implements Serializabl
 	 * Return the data of this message.
 	 */
 	@SuppressWarnings("unchecked")
-	protected T GetData() {
+	public T GetData() {
 		ByteArrayInputStream in = new ByteArrayInputStream(Base64.getDecoder().decode(_encodedData));
 		try {
 			ObjectInputStream objIn = new ObjectInputStream(in);

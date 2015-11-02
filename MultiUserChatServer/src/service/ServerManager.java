@@ -1,13 +1,13 @@
 package service;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map.Entry;
-
-import service.Message.UserDisconnected;
+import javax.swing.JOptionPane;
 
 public class ServerManager implements Runnable {
 
@@ -17,6 +17,7 @@ public class ServerManager implements Runnable {
 	public ServerManager() {
 		try {
 			_socket = new ServerSocket(5597);
+			JOptionPane.showMessageDialog(null, InetAddress.getLocalHost() + ":" + String.valueOf(5597));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -31,26 +32,39 @@ public class ServerManager implements Runnable {
 		for (Entry<User, ServerService> service : _services.entrySet()) {
 			if (service.getValue().equals(serviceClosed)) {
 				userDisconnected = service.getKey();
-				continue;
+				break;
 			}
 		}
-		this.SendMessageToAll(new Message(new Message.UserDisconnected(userDisconnected)));
-		_services.remove(userDisconnected);
+		if (userDisconnected != null) {
+			this.SendMessageToAll(new Message(new Message.UserDisconnected(userDisconnected)));
+			_services.remove(userDisconnected);
+		}
 	}
 
 	synchronized public void OnReceive(Message message, ServerService service) {
-		System.out.println(message);
 		switch (message.GetMessageType()) {
 		case UserConnected:
-			_services.put(((Message.UserConnect)message.GetMessage()).GetData(), service);
+			User user  = ((Message.UserConnect)message.GetMessage()).GetData();
+			this.SendAllUserConnect(service);
+			_services.put(user, service);
 			this.HandleMessage(message);
 			break;
 		case UserDisconnected:
-			_services.remove(((Message.UserConnect)message.GetMessage()).GetData());
+			_services.remove(((Message.UserDisconnected)message.GetMessage()).GetData());
 			this.HandleMessage(message);
 			break;
 		default:
 			this.HandleMessage(message);
+		}
+	}
+	
+	synchronized public void SendAllUserConnect(ServerService service) {
+		for (User user : _services.keySet()) {
+			try {
+				service.Send(new Message(new Message.UserConnect(user)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -63,6 +77,7 @@ public class ServerManager implements Runnable {
 	 * @param message Message to send.
 	 */
 	synchronized public void HandleMessage(Message message) {
+		System.out.println(message);
 		if (message.IsPrivate()) {
 			try {
 				_services.get(message.GetReceiver()).Send(message);

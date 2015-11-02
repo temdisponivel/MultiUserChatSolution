@@ -1,7 +1,12 @@
 package service;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.Serializable;
+
+import javax.swing.JOptionPane;
 
 /**
  * A message to send or receive from chat.
@@ -14,15 +19,37 @@ public class Message implements Serializable {
 		private static final long serialVersionUID = 1L;
 		
 		public TextMessage(String data) {
-			super(data);
+			super();
+			super.SetData(data);
 		}
 	}
 	
-	static public class FileMessage extends BaseMessage<File> {
+	static public class FileMessage extends BaseMessage<byte[]> {
 		private static final long serialVersionUID = 1L;
+		public String name = "";
+		public FileMessage(File data) throws IOException {
+			super();
+			if (!data.canRead()) {
+				JOptionPane.showMessageDialog(null, "Access denied. We cannot read this file.");
+				throw new IOException("Access denied");
+			}
+			try {
+				FileInputStream fileData = new FileInputStream(data);
+				byte[] bytes = new byte[(int) data.length()];
+				fileData.read(bytes);
+				super.SetData(bytes);
+				name = data.getName();
+				fileData.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 
-		public FileMessage(File data) {
-			super(data);
+		@Override
+		public String toString() {
+			return name;
 		}
 	}
 	
@@ -30,7 +57,8 @@ public class Message implements Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public ObjectMessage(T data) {
-			super(data);
+			super();
+			super.SetData(data);
 		}
 	}
 	
@@ -38,7 +66,8 @@ public class Message implements Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public UserConnect(User data) {
-			super(data);
+			super();
+			super.SetData(data);
 		}
 	}
 	
@@ -46,7 +75,8 @@ public class Message implements Serializable {
 		private static final long serialVersionUID = 1L;
 
 		public UserDisconnected(User data) {
-			super(data);
+			super();
+			super.SetData(data);
 		}
 	}
 	
@@ -59,7 +89,7 @@ public class Message implements Serializable {
 	/**
 	 * Create a message.
 	 */
-	protected Message(BaseMessage<?> message, User receiver) {
+	public Message(BaseMessage<?> message, User receiver) {
 		_message = message;
 		_receiver = receiver;
 	}
@@ -92,6 +122,7 @@ public class Message implements Serializable {
 	public Message(UserConnect message) {
 		this((BaseMessage<?>)message, null);
 		_type = MessageType.UserConnected;
+		_sender = message.GetData();
 	}
 	
 	/**
@@ -102,6 +133,7 @@ public class Message implements Serializable {
 	public Message(UserDisconnected message) {
 		this((BaseMessage<?>)message, null);
 		_type = MessageType.UserDisconnected;
+		_sender = message.GetData();
 	}
 	
 	/**
@@ -162,11 +194,13 @@ public class Message implements Serializable {
 		if (_type == MessageType.UserConnected) {
 			return _sender.toString() + " just enter.";
 		}
-		else if (_type == MessageType.UserConnected) {
+		else if (_type == MessageType.UserDisconnected) {
 			return _sender.toString() + " just left.";
 		}
-		else {
-			return _sender.toString() + " says: " + _message;
+		else if (this.IsPrivate()){
+			return _sender.toString() + " says in private to you: " + _message;
+		} else {
+			return _sender.toString() + " says to all: " + _message;
 		}
 	}
 }

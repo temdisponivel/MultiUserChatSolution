@@ -36,7 +36,7 @@ public class ServerService implements Runnable {
 	public void Send(Message message) throws IOException {
 		try
 		{
-			if (_socket != null && !_socket.isClosed()) {
+			if (_socket != null && !_socket.isClosed() && _socket.isConnected()) {
 				if (_outStream != null) {
 					_outStream.writeObject(message);
 				}
@@ -62,30 +62,24 @@ public class ServerService implements Runnable {
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 				} catch (SocketException e) {
-					this.Disconnect();
+					this.Finish();
 				} catch (IOException e) {
-					e.printStackTrace();
+					this.Finish();
 				}
 			}
 			else if (_socket != null && _socket.isClosed() && _socket.isConnected()) {
-				this.Disconnect();
+				this.Finish();
 			}
 		}
 	}
 	
 	protected void Disconnect() {
 		try {
-			if (_socket != null || !_socket.isClosed()) {
-				_manager.CloseServer(this);
+			if (_socket != null && !_socket.isClosed()) {
 				_socket.close();
 			}
-			if (_outStream != null) {
-				_outStream.close();
-			}
-			if (_inStream != null) {
-				_inStream.close();
-			}
 			this.ClearSocketInformation();
+			_manager.CloseServer(this);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -93,6 +87,7 @@ public class ServerService implements Runnable {
 
 	public void Finish() {
 		_active = false;
+		this.Disconnect();
 	}
 	
 	/**
