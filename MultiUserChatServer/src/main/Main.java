@@ -1,3 +1,8 @@
+/*
+ * Matheus de Almeida
+ * Victor Dias
+ */
+
 package main;
 
 import service.ServerManager;

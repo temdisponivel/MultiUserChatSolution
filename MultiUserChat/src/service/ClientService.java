@@ -1,3 +1,8 @@
+/*
+ * Matheus de Almeida
+ * Victor Dias
+ */
+
 package service;
 
 import java.io.IOException;
@@ -41,7 +46,7 @@ public class ClientService implements Runnable {
 	 * @throws IOException In case it is not possible to disconnect.
 	 */
 	public void Disconnect() throws IOException {
-		if (_socket != null && !_socket.isClosed()) {
+		if (_active) {
 			this.Send(new Message(new Message.UserDisconnected(_user)));
 			_socket.close();
 		}
@@ -58,7 +63,7 @@ public class ClientService implements Runnable {
 		try
 		{
 			message.SetSender(_user);
-			if (_socket != null && !_socket.isClosed()) {
+			if (_active) {
 				if (_outStream != null) {
 					_outStream.writeObject(message);
 				}
@@ -89,32 +94,24 @@ public class ClientService implements Runnable {
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 				} catch (SocketException e) {
-					try {
-						this.Disconnect();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
+					this.Finish();
 				} catch (IOException e) {
-					e.printStackTrace();
+					this.Finish();
 				}
 			}
-			else if (_socket.isClosed() && _socket.isConnected()) {
-				try {
-					this.Disconnect();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			else {
+				this.Finish();
 			}
 		}
 	}
 	
 	public void Finish() {
-		_active = false;
 		try {
 			this.Disconnect();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		_active = false;
 	}
 	
 	/**
